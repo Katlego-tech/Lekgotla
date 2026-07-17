@@ -2,7 +2,6 @@ import unittest
 
 from server import compile_manifest, context_bundle
 
-
 SOURCES = [
     {
         "name": ".cursorrules",
