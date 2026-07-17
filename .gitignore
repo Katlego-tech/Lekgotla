@@ -1,0 +1,10 @@
+# Private research / source documents (not part of the product)
+*.pdf
+
+# Local tooling
+node_modules/
+dist/
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store

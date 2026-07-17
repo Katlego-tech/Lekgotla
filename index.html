@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07100d" />
+    <title>Lekgotla — Context, resolved.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="noise"></div>
+    <div class="orb orb-one"></div><div class="orb orb-two"></div>
+    <main class="shell">
+      <nav>
+        <a class="brand" href="#"><span class="brand-mark">L</span><span>Lekgotla</span></a>
+        <div class="nav-center"><span class="live-dot"></span> Workspace intelligence</div>
+        <div class="nav-right"><button class="icon-button" aria-label="Settings">⌘</button><button class="avatar">KS</button></div>
+      </nav>
+
+      <section class="hero">
+        <div>
+          <p class="eyebrow"><span>01</span> THE AGENT CONFIG COMPILER</p>
+          <h1>One clear brief.<br /><em>Every agent aligned.</em></h1>
+          <p class="lede">Lekgotla turns the sprawl of AI configuration files into one living <code>AGENTS.md</code>—then sends each agent only the context it needs.</p>
+        </div>
+        <div class="hero-stats">
+          <div><span>Context reclaimed</span><strong id="reclaimed">68%</strong><small>of redundant instructions</small></div>
+          <div><span>Active conflicts</span><strong id="conflictStat">3</strong><small>ready for resolution</small></div>
+        </div>
+      </section>
+
+      <section class="workspace-grid">
+        <aside class="panel sources-panel">
+          <div class="panel-heading"><div><p class="eyebrow"><span>02</span> SOURCES</p><h2>Config inventory</h2></div><button class="add-button" id="addSource">＋</button></div>
+          <div class="source-list" id="sourceList">
+            <label class="source selected"><input type="checkbox" checked data-tokens="842" /><span class="file-icon violet">✦</span><span><b>.cursorrules</b><small>842 tokens · root</small></span><i>↗</i></label>
+            <label class="source selected"><input type="checkbox" checked data-tokens="1264" /><span class="file-icon orange">✦</span><span><b>CLAUDE.md</b><small>1,264 tokens · root</small></span><i>↗</i></label>
+            <label class="source selected"><input type="checkbox" checked data-tokens="638" /><span class="file-icon lime">✦</span><span><b>GEMINI.md</b><small>638 tokens · root</small></span><i>↗</i></label>
+            <label class="source selected"><input type="checkbox" checked data-tokens="418" /><span class="file-icon blue">✦</span><span><b>copilot-instructions.md</b><small>418 tokens · .github</small></span><i>↗</i></label>
+          </div>
+          <div class="dropzone"><span>⌁</span><p>Drop files or a repo folder</p><small>Markdown, YAML, plaintext</small></div>
+        </aside>
+
+        <section class="panel merge-panel">
+          <div class="panel-heading"><div><p class="eyebrow"><span>03</span> RESOLUTION ENGINE</p><h2>Find the signal in the noise</h2></div><span class="status"><span></span> ANALYSIS COMPLETE</span></div>
+          <div class="signal-card">
+            <div class="signal-top"><span class="spark">✦</span><span>LEKGOTLA SIGNAL</span><strong id="tokenReadout">3,162 → 1,006 tokens</strong></div>
+            <div class="bar"><span></span></div>
+            <p>Rules grouped into <b>7 durable directives</b>. 3 contradictions need your call before compilation.</p>
+          </div>
+          <div class="conflicts" id="conflicts">
+            <article class="conflict open"><button class="conflict-head"><span class="number">01</span><span><b>Package manager</b><small>2 incompatible instructions detected</small></span><span class="severity high">HIGH</span><span class="chevron">⌄</span></button><div class="conflict-body"><div><span class="rule-source cursor">.cursorrules</span><p>“Use pnpm for all dependency operations.”</p></div><div><span class="rule-source claude">CLAUDE.md</span><p>“Install packages with npm only.”</p></div><div class="decision"><button class="choice active" data-rule="pnpm">Use pnpm</button><button class="choice" data-rule="npm">Use npm</button></div></div></article>
+            <article class="conflict"><button class="conflict-head"><span class="number">02</span><span><b>Test command</b><small>Different validation commands</small></span><span class="severity medium">MED</span><span class="chevron">⌄</span></button><div class="conflict-body"><p>Choose a canonical test command for the generated manifest.</p><div class="decision"><button class="choice active">pnpm test</button><button class="choice">npm test</button></div></div></article>
+            <article class="conflict"><button class="conflict-head"><span class="number">03</span><span><b>Commit style</b><small>Conventional vs. descriptive messages</small></span><span class="severity low">LOW</span><span class="chevron">⌄</span></button><div class="conflict-body"><p>Keep the scoped conventional commit convention.</p></div></article>
+          </div>
+        </section>
+
+        <aside class="panel manifest-panel">
+          <div class="panel-heading"><div><p class="eyebrow"><span>04</span> OUTPUT</p><h2>AGENTS.md <span class="saved">SAVED</span></h2></div><button class="copy-button" id="copyManifest">Copy</button></div>
+          <div class="file-tabs"><span class="active">AGENTS.md</span><span>DIFF</span></div>
+          <pre id="manifest"><code><i># Lekgotla Manifest</i>
+
+<b>## Project rules</b>
+<span>- Use <mark>pnpm</mark> for all package operations.</span>
+<span>- Run <mark>pnpm test</mark> before handoff.</span>
+<span>- Prefer TypeScript; avoid <mark>any</mark>.</span>
+
+<b>## Delivery</b>
+<span>- Follow conventional commits.</span>
+<span>- Never commit secrets or local env files.</span>
+
+<b>## Context routing</b>
+<span>frontend  → src/components, src/app</span>
+<span>backend   → src/api, db, tests</span></code></pre>
+          <div class="manifest-footer"><span><i></i> Optimized for agents</span><button id="downloadManifest">↓ Export</button></div>
+        </aside>
+      </section>
+
+      <section class="routing">
+        <div class="routing-copy"><p class="eyebrow"><span>05</span> DYNAMIC CONTEXT</p><h2>Right context.<br /><em>Right moment.</em></h2><p>Lekgotla scopes your manifest by task and directory—less prompt debt, more useful work.</p></div>
+        <div class="route-demo panel">
+          <div class="task-tabs"><button class="task active" data-task="ui">Build UI</button><button class="task" data-task="api">Fix API</button><button class="task" data-task="review">Review PR</button></div>
+          <div class="route-flow"><div class="agent-node">✦<span>Agent task</span><b id="taskName">Build checkout UI</b></div><div class="flow-line"></div><div class="context-node"><span>CONTEXT BUNDLE</span><strong id="bundleCount">4 rules · 514 tokens</strong><p id="bundleText">components · design system · test rules</p></div></div>
+          <div class="route-note" id="routeNote"><span>↗</span> 84% less context than the full manifest</div>
+        </div>
+      </section>
+
+      <footer><span>LEKGOTLA / A gathering of clear thinking</span><span>Built for agents who should know less, better.</span></footer>
+    </main>
+    <script src="./script.js"></script>
+  </body>
+</html>
