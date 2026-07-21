@@ -41,7 +41,12 @@
             <label class="source selected"><input type="checkbox" checked data-tokens="638" /><span class="file-icon lime">✦</span><span><b>GEMINI.md</b><small>638 tokens · root</small></span><i>↗</i></label>
             <label class="source selected"><input type="checkbox" checked data-tokens="418" /><span class="file-icon blue">✦</span><span><b>copilot-instructions.md</b><small>418 tokens · .github</small></span><i>↗</i></label>
           </div>
-          <div class="dropzone"><span>⌁</span><p>Drop files or a repo folder</p><small>Markdown, YAML, plaintext</small></div>
+          <div class="dropzone" id="dropzone">
+            <span>⌁</span>
+            <p>Drop files or a repo folder</p>
+            <small>Markdown, YAML, plaintext</small>
+            <input type="file" id="fileInput" multiple style="display: none;" />
+          </div>
         </aside>
 
         <section class="panel merge-panel">
@@ -64,17 +69,17 @@
           <pre id="manifest"><code><i># Lekgotla Manifest</i>
 
 <b>## Project rules</b>
-<span>- Use <mark>pnpm</mark> for all package operations.</span>
-<span>- Run <mark>pnpm test</mark> before handoff.</span>
-<span>- Prefer TypeScript; avoid <mark>any</mark>.</span>
+- Use <mark>pnpm</mark> for all package operations.
+- Run <mark>pnpm test</mark> before handoff.
+- Prefer TypeScript; avoid <mark>any</mark>.
 
 <b>## Delivery</b>
-<span>- Follow conventional commits.</span>
-<span>- Never commit secrets or local env files.</span>
+- Follow conventional commits.
+- Never commit secrets or local env files.
 
 <b>## Context routing</b>
-<span>frontend  → src/components, src/app</span>
-<span>backend   → src/api, db, tests</span></code></pre>
+frontend  → src/components, src/app
+backend   → src/api, db, tests</code></pre>
           <div class="manifest-footer"><span><i></i> Optimized for agents</span><button id="downloadManifest">↓ Export</button></div>
         </aside>
       </section>

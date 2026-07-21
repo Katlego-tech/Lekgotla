@@ -1,8 +1,14 @@
+import sys
+from pathlib import Path
+
 from pytest_bdd import given, scenarios, then, when
 
-from server import compile_manifest
+# Add backend directory to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
 
-scenarios("features/compiler.feature")
+from app.compiler import compile_manifest
+
+scenarios("tests/features/compiler.feature")
 
 
 @given("config sources that disagree on the package manager", target_fixture="sources")

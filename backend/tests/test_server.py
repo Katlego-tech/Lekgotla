@@ -1,6 +1,11 @@
+import sys
 import unittest
+from pathlib import Path
 
-from server import compile_manifest, context_bundle
+# Add backend directory to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
+
+from app.compiler import compile_manifest, context_bundle
 
 SOURCES = [
     {
@@ -22,7 +27,3 @@ class CompilerTests(unittest.TestCase):
         bundle = context_bundle(compiled["manifest"], "review")
         self.assertLess(bundle["tokens"], compiled["outputTokens"])
         self.assertIn("Delivery", bundle["bundle"])
-
-
-if __name__ == "__main__":
-    unittest.main()
