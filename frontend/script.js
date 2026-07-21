@@ -16,6 +16,20 @@ function estimateTokens(text) {
   return Math.max(1, Math.round(count * 1.28));
 }
 
+function initializeSources() {
+  const labels = document.querySelectorAll('.source');
+  labels.forEach(label => {
+    const name = label.querySelector('b').textContent;
+    const content = sourcesData[name];
+    if (content) {
+      const tokens = estimateTokens(content);
+      const input = label.querySelector('input');
+      input.dataset.tokens = tokens;
+      label.querySelector('small').textContent = `${tokens.toLocaleString()} tokens · root`;
+    }
+  });
+}
+
 function updateTokens() {
   const total = [...getSourceBoxes()].filter(box => box.checked).reduce((sum, box) => sum + Number(box.dataset.tokens), 0);
   const compact = Math.round(total * 0.318);
@@ -118,6 +132,10 @@ async function compileSources() {
     $('#conflictStat').textContent = result.conflicts.length;
     $('#signalText').innerHTML = `Rules grouped into <b>${result.directives} directives</b>. ${result.conflicts.length} contradictions need your call before compilation.`;
     renderConflicts(result.conflicts);
+
+    // Update active context bundle dynamically with the compiled manifest
+    const activeTask = document.querySelector('.task.active')?.dataset.task || 'ui';
+    updateContextBundle(activeTask);
   } catch (error) {
     console.warn('Lekgotla API unavailable; retaining local demo state.', error);
   }
@@ -130,20 +148,30 @@ const routeData = {
   api: ['Fix orders API timeout', '5 rules · 642 tokens', 'API contracts · database · test rules', '80% less context than the full manifest'],
   review: ['Review payment PR', '3 rules · 376 tokens', 'commit rules · security · test rules', '88% less context than the full manifest']
 };
-document.querySelectorAll('.task').forEach(button => button.addEventListener('click', async () => {
-  document.querySelectorAll('.task').forEach(tab => tab.classList.remove('active'));
-  button.classList.add('active');
-  const [name, count, text, note] = routeData[button.dataset.task];
-  $('#taskName').textContent = name; $('#bundleCount').textContent = count; $('#bundleText').textContent = text; $('#routeNote').innerHTML = `<span>↗</span> ${note}`;
+
+async function updateContextBundle(task) {
+  const [name, count, text, note] = routeData[task];
+  $('#taskName').textContent = name;
+  $('#bundleCount').textContent = count;
+  $('#bundleText').textContent = text;
+  $('#routeNote').innerHTML = `<span>↗</span> ${note}`;
   try {
-    const response = await fetch('/api/context', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ manifest: currentManifest, task: button.dataset.task }) });
+    const response = await fetch('/api/context', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ manifest: currentManifest, task }) });
     if (!response.ok) throw new Error('Context routing failed');
     const bundle = await response.json();
     $('#taskName').textContent = bundle.task;
     $('#bundleCount').textContent = `${bundle.rules} rules · ${bundle.tokens} tokens`;
     $('#bundleText').textContent = bundle.areas;
     $('#routeNote').innerHTML = `<span>↗</span> ${bundle.reduction}% less context than the full manifest`;
-  } catch (error) { console.warn('Lekgotla API unavailable; retaining local route state.', error); }
+  } catch (error) {
+    console.warn('Lekgotla API unavailable; retaining local route state.', error);
+  }
+}
+
+document.querySelectorAll('.task').forEach(button => button.addEventListener('click', async () => {
+  document.querySelectorAll('.task').forEach(tab => tab.classList.remove('active'));
+  button.classList.add('active');
+  await updateContextBundle(button.dataset.task);
 }));
 
 $('#copyManifest').addEventListener('click', async () => {
@@ -226,7 +254,7 @@ async function handleFiles(filesOrEntries) {
           reader.readEntries(resolve);
         });
       };
-      
+
       let entries = await readEntriesBatch();
       while (entries.length > 0) {
         for (const child of entries) {
@@ -250,13 +278,13 @@ async function handleFiles(filesOrEntries) {
   }
 
   for (const res of results) {
-    const isConfig = res.name.startsWith('.') || 
-                     res.name.endsWith('.md') || 
-                     res.name.endsWith('.txt') || 
-                     res.name.endsWith('.json') || 
-                     res.name.endsWith('.yaml') || 
+    const isConfig = res.name.startsWith('.') ||
+                     res.name.endsWith('.md') ||
+                     res.name.endsWith('.txt') ||
+                     res.name.endsWith('.json') ||
+                     res.name.endsWith('.yaml') ||
                      res.name.endsWith('.yml');
-    
+
     if (isConfig && res.content) {
       const tokens = estimateTokens(res.content);
       addSource(res.name, res.content, tokens);
@@ -294,5 +322,6 @@ dropzone.addEventListener('drop', async (e) => {
   await handleFiles(items);
 });
 
+initializeSources();
 updateTokens();
 compileSources();
