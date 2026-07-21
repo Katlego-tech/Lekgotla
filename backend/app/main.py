@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import json
+import sys
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+
+# Add backend directory to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
 
 from app.compiler import compile_manifest, context_bundle
 
@@ -29,6 +33,9 @@ class LekgotlaHandler(SimpleHTTPRequestHandler):
             if length > 1_000_000:
                 return self.send_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": "Request body exceeds 1 MB"})
             body = json.loads(self.rfile.read(length) or "{}")
+            if not isinstance(body, dict):
+                return self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Request body must be a JSON object"})
+
             if self.path == "/api/compile":
                 sources = body.get("sources")
                 invalid_sources = not isinstance(sources, list) or any(
@@ -42,11 +49,25 @@ class LekgotlaHandler(SimpleHTTPRequestHandler):
                         HTTPStatus.BAD_REQUEST,
                         {"error": "sources must be an array of { name, content }"},
                     )
-                return self.send_json(HTTPStatus.OK, compile_manifest(sources, body.get("resolutions")))
+                resolutions = body.get("resolutions")
+                if resolutions is not None and (
+                    not isinstance(resolutions, dict)
+                    or any(not isinstance(k, str) or not isinstance(v, str) for k, v in resolutions.items())
+                ):
+                    return self.send_json(
+                        HTTPStatus.BAD_REQUEST,
+                        {"error": "resolutions must be a JSON object mapping keys to string values"},
+                    )
+                return self.send_json(HTTPStatus.OK, compile_manifest(sources, resolutions))
+
             if self.path == "/api/context":
                 if not isinstance(body.get("manifest"), str):
                     return self.send_json(HTTPStatus.BAD_REQUEST, {"error": "manifest must be a string"})
-                return self.send_json(HTTPStatus.OK, context_bundle(body["manifest"], body.get("task", "ui")))
+                task = body.get("task", "ui")
+                if not isinstance(task, str):
+                    return self.send_json(HTTPStatus.BAD_REQUEST, {"error": "task must be a string"})
+                return self.send_json(HTTPStatus.OK, context_bundle(body["manifest"], task))
+
             return self.send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
         except (json.JSONDecodeError, ValueError):
             return self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Invalid JSON body"})

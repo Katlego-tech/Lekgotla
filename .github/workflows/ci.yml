@@ -21,9 +21,10 @@ jobs:
         with:
           version: "latest"
           enable-cache: true
+          cache-dependency-glob: "backend/pyproject.toml"
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: "backend/pyproject.toml"
       - name: Install dependencies
         run: uv sync --all-groups
       - name: Check formatting

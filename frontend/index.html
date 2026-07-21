@@ -54,12 +54,10 @@
           <div class="signal-card">
             <div class="signal-top"><span class="spark">✦</span><span>LEKGOTLA SIGNAL</span><strong id="tokenReadout">3,162 → 1,006 tokens</strong></div>
             <div class="bar"><span></span></div>
-            <p>Rules grouped into <b>7 durable directives</b>. 3 contradictions need your call before compilation.</p>
+            <p id="signalText">Rules grouped into <b>7 durable directives</b>. 3 contradictions need your call before compilation.</p>
           </div>
           <div class="conflicts" id="conflicts">
-            <article class="conflict open"><button class="conflict-head"><span class="number">01</span><span><b>Package manager</b><small>2 incompatible instructions detected</small></span><span class="severity high">HIGH</span><span class="chevron">⌄</span></button><div class="conflict-body"><div><span class="rule-source cursor">.cursorrules</span><p>“Use pnpm for all dependency operations.”</p></div><div><span class="rule-source claude">CLAUDE.md</span><p>“Install packages with npm only.”</p></div><div class="decision"><button class="choice active" data-rule="pnpm">Use pnpm</button><button class="choice" data-rule="npm">Use npm</button></div></div></article>
-            <article class="conflict"><button class="conflict-head"><span class="number">02</span><span><b>Test command</b><small>Different validation commands</small></span><span class="severity medium">MED</span><span class="chevron">⌄</span></button><div class="conflict-body"><p>Choose a canonical test command for the generated manifest.</p><div class="decision"><button class="choice active">pnpm test</button><button class="choice">npm test</button></div></div></article>
-            <article class="conflict"><button class="conflict-head"><span class="number">03</span><span><b>Commit style</b><small>Conventional vs. descriptive messages</small></span><span class="severity low">LOW</span><span class="chevron">⌄</span></button><div class="conflict-body"><p>Keep the scoped conventional commit convention.</p></div></article>
+            <!-- Dynamically populated -->
           </div>
         </section>
 

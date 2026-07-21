@@ -115,8 +115,10 @@ def compile_manifest(sources: list[dict[str, str]], resolutions: dict[str, str] 
     sections: dict[str, list[str]] = {}
     for rule in selected:
         sections.setdefault(rule["section"], []).append(rule["render"](rule["value"]))
+    emitted_passthrough: list[str] = []
     if passthrough:
-        sections["Additional guidance"] = list(dict.fromkeys(passthrough[:3]))
+        emitted_passthrough = list(dict.fromkeys(passthrough))[:3]
+        sections["Additional guidance"] = emitted_passthrough
     sections["Context routing"] = ["frontend → src/components, src/app", "backend → src/api, db, tests"]
     manifest_lines = ["# Lekgotla Manifest", ""]
     for heading, rules in sections.items():
@@ -127,7 +129,7 @@ def compile_manifest(sources: list[dict[str, str]], resolutions: dict[str, str] 
     return {
         "manifest": manifest,
         "conflicts": conflicts,
-        "directives": len(selected) + len(passthrough),
+        "directives": len(selected) + len(emitted_passthrough),
         "inputTokens": input_tokens,
         "outputTokens": output_tokens,
         "reclaimed": max(0, round((1 - output_tokens / input_tokens) * 100)) if input_tokens else 0,
@@ -146,12 +148,17 @@ def context_bundle(manifest: str, task: str) -> dict[str, Any]:
     }
     name, words, areas = routes.get(task, routes["ui"])
     blocks = manifest.split("## ")
-    bundle = (
-        "".join(
-            block for block in blocks if block.startswith("# Lekgotla") or any(word in block.lower() for word in words)
-        ).strip()
-        + "\n"
-    )
+    
+    bundle_parts = []
+    for i, block in enumerate(blocks):
+        if i == 0:
+            if block.strip():
+                bundle_parts.append(block)
+        else:
+            if any(word in block.lower() for word in words):
+                bundle_parts.append(f"## {block}")
+                
+    bundle = "".join(bundle_parts).strip() + "\n"
     tokens, full_tokens = estimate_tokens(bundle), estimate_tokens(manifest)
     return {
         "task": name,

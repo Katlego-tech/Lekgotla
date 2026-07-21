@@ -8,7 +8,7 @@ const sourcesData = {
   'copilot-instructions.md': 'Prefer TypeScript; avoid any.\nFollow conventional commits.'
 };
 let currentManifest = $('#manifest').innerText;
-let currentResolutions = { packageManager: 'pnpm' };
+let currentResolutions = {};
 
 function estimateTokens(text) {
   const words = text.trim().match(/\S+/g);
@@ -25,6 +25,83 @@ function updateTokens() {
   document.querySelectorAll('.source').forEach(label => label.classList.toggle('selected', label.querySelector('input').checked));
 }
 
+function getSourceClass(source) {
+  const name = source.toLowerCase();
+  if (name.includes('cursor')) return 'cursor';
+  if (name.includes('claude')) return 'claude';
+  if (name.includes('gemini')) return 'gemini';
+  return 'source-other';
+}
+
+function renderConflicts(conflicts) {
+  const container = $('#conflicts');
+  container.innerHTML = '';
+
+  conflicts.forEach((conflict, index) => {
+    const number = String(index + 1).padStart(2, '0');
+    const severityClass = conflict.severity.toLowerCase();
+    const severityText = conflict.severity.toUpperCase();
+
+    const article = document.createElement('article');
+    article.className = 'conflict';
+    if (index === 0) article.classList.add('open');
+
+    let optionsHtml = '';
+    let decisionButtonsHtml = '';
+
+    const activeValue = currentResolutions[conflict.key] || conflict.options[0].value;
+    currentResolutions[conflict.key] = activeValue;
+
+    conflict.options.forEach(opt => {
+      const sourceClass = getSourceClass(opt.source);
+      optionsHtml += `
+        <div>
+          <span class="rule-source ${sourceClass}">${opt.source}</span>
+          <p>“${opt.text}”</p>
+        </div>
+      `;
+
+      const isActive = activeValue === opt.value;
+      const activeClass = isActive ? 'active' : '';
+      decisionButtonsHtml += `
+        <button class="choice ${activeClass}" data-key="${conflict.key}" data-value="${opt.value}">
+          Use ${opt.value}
+        </button>
+      `;
+    });
+
+    article.innerHTML = `
+      <button class="conflict-head">
+        <span class="number">${number}</span>
+        <span><b>${conflict.title}</b><small>${conflict.options.length} incompatible instructions detected</small></span>
+        <span class="severity ${severityClass}">${severityText}</span>
+        <span class="chevron">⌄</span>
+      </button>
+      <div class="conflict-body">
+        ${optionsHtml}
+        <div class="decision">
+          ${decisionButtonsHtml}
+        </div>
+      </div>
+    `;
+
+    article.querySelector('.conflict-head').addEventListener('click', () => {
+      article.classList.toggle('open');
+    });
+
+    article.querySelectorAll('.choice').forEach(button => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.key;
+        const val = button.dataset.value;
+        currentResolutions[key] = val;
+        compileSources();
+      });
+    });
+
+    container.appendChild(article);
+  });
+}
+
 async function compileSources() {
   const sources = [...getSourceBoxes()].filter(box => box.checked).map(box => {
     const name = box.closest('.source').querySelector('b').textContent;
@@ -39,23 +116,14 @@ async function compileSources() {
     $('#tokenReadout').textContent = `${result.inputTokens.toLocaleString()} → ${result.outputTokens.toLocaleString()} tokens`;
     $('#reclaimed').textContent = `${result.reclaimed}%`;
     $('#conflictStat').textContent = result.conflicts.length;
+    $('#signalText').innerHTML = `Rules grouped into <b>${result.directives} directives</b>. ${result.conflicts.length} contradictions need your call before compilation.`;
+    renderConflicts(result.conflicts);
   } catch (error) {
     console.warn('Lekgotla API unavailable; retaining local demo state.', error);
   }
 }
 
 getSourceBoxes().forEach(box => box.addEventListener('change', () => { updateTokens(); compileSources(); }));
-
-document.querySelectorAll('.conflict-head').forEach(head => head.addEventListener('click', () => head.closest('.conflict').classList.toggle('open')));
-document.querySelectorAll('.choice').forEach(choice => choice.addEventListener('click', () => {
-  const group = choice.closest('.decision');
-  group.querySelectorAll('.choice').forEach(button => button.classList.remove('active'));
-  choice.classList.add('active');
-  if (choice.dataset.rule) {
-    currentResolutions.packageManager = choice.dataset.rule;
-    compileSources();
-  }
-}));
 
 const routeData = {
   ui: ['Build checkout UI', '4 rules · 514 tokens', 'components · design system · test rules', '84% less context than the full manifest'],
