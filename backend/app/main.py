@@ -7,7 +7,7 @@ import sys
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 # Add backend directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
@@ -58,7 +58,7 @@ class LekgotlaHandler(SimpleHTTPRequestHandler):
                         HTTPStatus.BAD_REQUEST,
                         {"error": "resolutions must be a JSON object mapping keys to string values"},
                     )
-                return self.send_json(HTTPStatus.OK, compile_manifest(sources, resolutions))
+                return self.send_json(HTTPStatus.OK, compile_manifest(cast(list[dict[str, str]], sources), resolutions))
 
             if self.path == "/api/context":
                 if not isinstance(body.get("manifest"), str):
