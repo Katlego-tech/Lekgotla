@@ -148,7 +148,7 @@ def context_bundle(manifest: str, task: str) -> dict[str, Any]:
     }
     name, words, areas = routes.get(task, routes["ui"])
     blocks = manifest.split("## ")
-    
+
     bundle_parts = []
     for i, block in enumerate(blocks):
         if i == 0:
@@ -157,7 +157,7 @@ def context_bundle(manifest: str, task: str) -> dict[str, Any]:
         else:
             if any(word in block.lower() for word in words):
                 bundle_parts.append(f"## {block}")
-                
+
     bundle = "".join(bundle_parts).strip() + "\n"
     tokens, full_tokens = estimate_tokens(bundle), estimate_tokens(manifest)
     return {
