@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
 
 from app.compiler import compile_manifest
 
-scenarios("tests/features/compiler.feature")
+scenarios("features/compiler.feature")
 
 
 @given("config sources that disagree on the package manager", target_fixture="sources")
