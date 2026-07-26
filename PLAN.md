@@ -51,7 +51,7 @@ The full product/security constraint set these are distilled from is preserved v
 
 | Dimension | Value |
 | --- | --- |
-| **Language(s) + versions** | Python **3.12** (confirmed: `requires-python = ">=3.12"`, `.venv` is 3.12). Node: **verify current LTS** before pinning — T002. |
+| **Language(s) + versions** | Python **3.12** (confirmed: `requires-python = ">=3.12"`, `.venv` is 3.12). Node: **v24 LTS** (confirmed: Node 24 is Active LTS, local environment is v24.18.0). |
 | **Architecture** | **Modular monolith first, service-shaped.** One FastAPI app with hard module boundaries named for the eventual services (`identity`, `github`, `compiler`, `api_gateway`), split into real services at Phase 6. See *Architecture deviation* below. |
 | **Messaging / async** | RabbitMQ (`aio-pika`, already declared). Not wired until Phase 5 — until then, in-process background tasks behind the same interface. |
 | **Frontend** | React 19 + **Vite** + shadcn/ui (Radix + Tailwind v4 + CVA), **preserving the existing dark-lime identity exactly** — see [docs/frontend-shadcn-migration.md](docs/frontend-shadcn-migration.md). Vite over Next.js: Lekgotla sits entirely behind a login, so there is no SEO or SSR need to pay for, and the gateway can serve the built assets directly. |

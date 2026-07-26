@@ -23,8 +23,8 @@ for dir in "$root" "$root"/backend "$root"/services/* "$root"/apps/*; do
 
   if [ -f "$dir/pyproject.toml" ] || [ -f "$dir/requirements.txt" ]; then
     if command -v uv >/dev/null 2>&1; then
-      echo "-> ruff + pytest ($dir)"
-      ( cd "$dir" && uv run ruff check . && uv run pytest -q ) || fail=1
+      echo "-> ruff + pyright + pytest + pip-audit ($dir)"
+      ( cd "$dir" && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest -q && uv run pip-audit ) || fail=1
       ran=$((ran + 1))
     elif python -c "import pytest" >/dev/null 2>&1; then
       echo "-> pytest ($dir)"

@@ -25,21 +25,21 @@ Everything else is unclaimed; Gemini should work top-down from Phase 1.
 
 The repo currently claims things that are not true. Fix that before building on it.
 
-- [ ] T001 [SET] Merge [docs/engineering-manifest.md](docs/engineering-manifest.md) into its proper
+- [x] T001 [SET] Merge [docs/engineering-manifest.md](docs/engineering-manifest.md) into its proper
       homes: security/product constraints → PLAN.md Non-negotiables (already drafted, verify nothing
       was dropped); architecture detail → docs/project-structure.md. Then delete the preserved file.
       **Do not silently drop a constraint** — if one has no home, say so in STATUS.md.
-- [ ] T002 [P] [SET] Verify and pin exact versions (architecture-defaults §5). Python is confirmed
+- [x] T002 [P] [SET] Verify and pin exact versions (architecture-defaults §5). Python is confirmed
       3.12; confirm the current Node LTS **against the source**, do not assume. Record both in
       PLAN.md's Technical Context.
-- [ ] T003 [P] [SET] Commit `backend/uv.lock`. It exists on disk but is untracked, so the pinned
+- [x] T003 [P] [SET] Commit `backend/uv.lock`. It exists on disk but is untracked, so the pinned
       dependency set is not reproducible for anyone else.
-- [ ] T004 [SET] Resolve the 12 declared-but-unused dependencies (`fastapi`, `sqlalchemy`, `alembic`,
+- [x] T004 [SET] Resolve the 12 declared-but-unused dependencies (`fastapi`, `sqlalchemy`, `alembic`,
       `aio-pika`, `argon2-cffi`, `authlib`, `cryptography`, `openai`, `uvicorn`, `pydantic-settings`,
       `opentelemetry-api`, `httpx`). Each is either used by end of Phase 3 or removed from
       `pyproject.toml` now. A dependency list that implies integrations we have not built is exactly
       the "claims a capability it does not have" failure in SPEC.md.
-- [ ] T005 [SET] Add `ruff format --check`, `pyright` and `pip-audit` to the pre-push hook, or record
+- [x] T005 [SET] Add `ruff format --check`, `pyright` and `pip-audit` to the pre-push hook, or record
       in PLAN.md why they are CI-only. The hook currently runs Ruff + pytest only.
 
 **Checkpoint:** the repo describes itself honestly. CI green, hook green, no unused declarations.

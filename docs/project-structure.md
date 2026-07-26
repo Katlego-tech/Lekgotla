@@ -1,51 +1,64 @@
 # Project structure
 
-> 📝 **Customize:** replace everything below with the *actual, current* layout of this repo. This
-> file exists so a new session (human or AI) can find its way around without re-deriving the tree
-> from scratch, and so [AGENTS.md](../AGENTS.md) §7 can stay a short summary that links here for
-> detail. Keep it in sync when the shape of the repo changes — a stale structure doc is worse than
-> none, because it actively misleads.
+The actual directory layout and service architecture for **Lekgotla**.
 
-## The tree
+## Current tree (Modular Monolith)
 
-The default shape (see [docs/architecture-defaults.md](architecture-defaults.md)) is microservices +
-a broker + a shadcn/ui frontend. Replace the `services/*` and `apps/*` contents below with what this
-project actually has — the point is the top-level shape, not these exact names.
+Lekgotla is starting as a **modular monolith** with service-shaped boundaries, designed to be split into microservices in Phase 9 (see [PLAN.md](../PLAN.md) *Architecture deviation*).
 
 ```
-<project-name>/
-├── README.md              <- human overview + quick start
-├── AGENTS.md               <- the rules (every session reads this)
-├── STATUS.md                <- LIVE board: done / in-progress / next  (read first, update last)
-├── <CLAUDE.md / GEMINI.md / ...>  <- per-tool entry points
+Lekgotla/
+├── README.md                      <- human overview + quick start
+├── AGENTS.md                      <- the rules (every session reads this)
+├── STATUS.md                      <- LIVE board: done / in-progress / next (read first, update last)
+├── CLAUDE.md / GEMINI.md          <- per-tool entry points
 ├── SPEC.md · PLAN.md · TASKS.md   <- the planning documents
-├── docs/                    <- this documentation (architecture, pipeline, testing, structure...)
-│   └── architecture-defaults.md  <- the microservices/messaging/shadcn defaults + any deviations
-├── .claude/                  <- agents (code-explorer/architect/reviewer), the feature-dev command,
-│                                 the frontend-design skill
-├── .githooks/pre-push        <- the test gate (blocks pushing failing code / direct main pushes)
-├── .github/workflows/         <- CI
-├── services/                  <- one directory per microservice (one bounded context each)
-│   ├── <service-a>/            <-   its own Dockerfile, tests, and datastore where reasonable
-│   └── <service-b>/
-├── broker/ or infra/           <- Kafka/RabbitMQ config, topic/queue docs
-├── docker-compose.yml          <- spins up every service + the broker + any datastore for local dev
-└── apps/web/                   <- the shadcn/ui frontend (Radix + Tailwind + CVA), thin over the services
+├── docs/                          <- architecture, workflow, testing, and migration docs
+├── .claude/                       <- agents, feature-dev command, frontend-design skill
+├── .githooks/pre-push             <- local test gate (blocks direct pushes to main & failing tests)
+├── .github/workflows/ci.yml       <- CI workflow
+├── backend/                       <- Python 3.12 backend (uv-managed)
+│   ├── app/
+│   │   ├── identity/              <- accounts, sessions, password hashing (Argon2id), verification mail
+│   │   ├── github/                <- OAuth (PKCE), repo listing, read-only fetch, PR writes
+│   │   ├── compiler/              <- deterministic compiler + OpenAI Responses API semantic merge
+│   │   ├── gateway/               <- FastAPI app factory, auth dependencies, browser-facing layer
+│   │   ├── db/                    <- SQLAlchemy 2.x models & session factory
+│   │   └── main.py                <- application entry point
+│   ├── alembic/                   <- database migration scripts
+│   └── tests/                     <- unit & pytest-bdd scenarios mirroring app/
+├── frontend/                      <- static prototype (HTML/CSS/JS) — replaced by apps/web at Phase 5
+└── apps/web/                      <- React 19 + Vite + shadcn/ui frontend (scaffolded at Phase 5)
 ```
 
-## Why this shape
+## Target architecture (Phase 9 split)
 
-`<A few sentences on the real architectural decisions: why a monorepo vs. multiple repos, why this
-service boundary, what's shared between which apps, and so on. This is the part that's genuinely
-project-specific — don't try to templatize it, just make sure it's written down somewhere.>`
+In Phase 9, internal modules promote to standalone microservices communicating over RabbitMQ and HTTP:
 
-## Run it
+```
+services/
+├── identity/       <- account verification, sessions, audit records (SQLite DB)
+├── github/         <- OAuth integration, repo scanning, PR management (SQLite DB)
+├── compiler/       <- deterministic compiler & OpenAI semantic merge worker (SQLite DB)
+└── api_gateway/    <- browser-facing proxy, auth verification, internal token issuance
+
+broker/             <- RabbitMQ config & versioned event contracts
+docker-compose.yml  <- local development stack (services + RabbitMQ broker)
+```
+
+## Architectural choices
+
+- **Modular Monolith First**: Monolith layout for rapid development in early phases while enforcing explicit module boundaries (no cross-module table joins).
+- **Service Boundaries**: `identity`, `github`, `compiler`, `gateway`. Each service will eventually own its own database, Alembic migrations, and Docker volume.
+- **Async Communication**: RabbitMQ for background tasks (e.g., GitHub webhook analysis queues) with versioned event contracts.
+- **Browser Security**: Opaque server-side sessions stored in `Secure`, `HttpOnly`, `SameSite` cookies. No JWTs in local storage.
+
+## How to run locally
 
 ```bash
-# fill in the real commands to boot every piece of the system locally
+# Run tests
+cd backend && uv run pytest -q
+
+# Run backend dev server
+python3 backend/app/main.py
 ```
-
-## Status
-
-`<What's scaffold-only vs. what's real, if that distinction matters at this point in the project —
-useful early on, delete once everything is real.>`

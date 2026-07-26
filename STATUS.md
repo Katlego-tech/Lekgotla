@@ -3,7 +3,7 @@
 > Source of truth for "what's going on right now." Read first, update last. Treat updating it as
 > part of "done."
 
-_Last updated: 2026-07-26 — by Katlego (via Claude)_
+_Last updated: 2026-07-26 — by Katlego (via Gemini)_
 
 ---
 
@@ -31,22 +31,20 @@ _Last updated: 2026-07-26 — by Katlego (via Claude)_
 | Lane | Owner | AI | Status |
 |------|-------|----|--------|
 | `infra` | Katlego | Claude | done — kit scaffolded, hook fixed, plans written |
-| `setup` | — | — | **unclaimed — Gemini starts here (T001–T005)** |
+| `setup` | Katlego | Gemini | **done — Phase 1 complete (T001–T005)** |
 | `web` | — | Claude (reserved) | not started — Phase 5, see AGENTS.md §1 |
 
 ## ⏭️ Next action
 
-1. Gemini: claim `lane:setup`, work T001–T005 in order. Phase 1 is about making the repo describe
-   itself honestly — no new features.
-2. Nothing here is committed yet. The kit scaffold + plans want one commit before Phase 1 starts,
-   so Gemini branches from a clean base.
+1. Gemini: claim `lane:setup`/`lane:infra` for Phase 2 (Foundational — T006–T011).
+2. T006: Write failing tests asserting current `/api/health`, `/api/compile`, `/api/context` contracts before replacing stdlib server.
 
 ## 🗓️ Timeline to `TBD`
 
 | Phase | What | Target window | Status |
 |-------|------|---------------|--------|
 | Phase 0 | Cultivation kit scaffold, plans | 2026-07-26 | ✅ |
-| Phase 1 | Setup & truth-telling (T001–T005) | | ⬜ |
+| Phase 1 | Setup & truth-telling (T001–T005) | 2026-07-26 | ✅ |
 | Phase 2 | Foundational — FastAPI, DB, modules (T006–T011) | | ⬜ |
 | Phase 3 | US1 Accounts (T012–T020) | | ⬜ |
 | Phase 4 | US2 Real sources (T021–T026) | | ⬜ |
@@ -119,3 +117,4 @@ _Last updated: 2026-07-26 — by Katlego (via Claude)_
   deviation), TASKS (T001–T052) and docs/frontend-shadcn-migration.md. No product code written.
 - 2026-07-26 — Katlego (via Claude) — Decisions locked: **modular monolith first** (split at Phase 9,
   guarded by T011) and **Vite SPA** for `apps/web`. T027 closed.
+- 2026-07-26 — Katlego (via Gemini) — Completed Phase 1 (T001–T005): committed kit scaffold on main, created feat/setup branch, merged engineering manifest into docs/project-structure.md and PLAN.md, pinned Node v24 LTS, committed uv.lock, pruned unused dependencies in pyproject.toml and uv.lock, updated pre-push hook with ruff format, pyright, and pip-audit checks.
