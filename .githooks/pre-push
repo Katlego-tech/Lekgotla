@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Pre-push gate: blocks direct pushes to main, runs whatever test tooling it finds.
+# Customized for the Lekgotla layout: Python lives in backend/ (uv-managed), not at the
+# repo root, so the scan below includes it -- see docs/git-workflow.md.
+set -u
+protected="refs/heads/main"
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "$protected" ]; then
+    echo "Direct pushes to 'main' are not allowed. Push a branch and open a PR."
+    exit 1
+  fi
+done
+
+echo "Running the test gate before push..."
+fail=0
+ran=0
+root="$(git rev-parse --show-toplevel)"
+
+# backend/ is today's Python project; services/* and apps/* are where the microservices
+# split lands later. Both are scanned so the gate keeps working across the migration.
+for dir in "$root" "$root"/backend "$root"/services/* "$root"/apps/*; do
+  [ -d "$dir" ] || continue
+
+  if [ -f "$dir/pyproject.toml" ] || [ -f "$dir/requirements.txt" ]; then
+    if command -v uv >/dev/null 2>&1; then
+      echo "-> ruff + pyright + pytest + pip-audit ($dir)"
+      ( cd "$dir" && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest -q && uv run pip-audit ) || fail=1
+      ran=$((ran + 1))
+    elif python -c "import pytest" >/dev/null 2>&1; then
+      echo "-> pytest ($dir)"
+      ( cd "$dir" && python -m pytest -q ) || fail=1
+      ran=$((ran + 1))
+    else
+      echo "!! $dir has a Python project but neither uv nor pytest is available."
+      fail=1
+    fi
+  fi
+
+  if [ -f "$dir/package.json" ] && [ -d "$dir/node_modules" ]; then
+    echo "-> npm test ($dir)"
+    ( cd "$dir" && npm test --silent --if-present ) || fail=1
+    ran=$((ran + 1))
+  fi
+done
+
+# A gate that silently finds nothing to run is worse than no gate -- it reports green.
+if [ "$ran" -eq 0 ]; then
+  echo "Test gate found nothing to run. That is a misconfiguration, not a pass."
+  echo "Check that backend/ (or services/*, apps/*) still holds the project manifests."
+  exit 1
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo "Test gate failed. Fix it before pushing (or --no-verify only for a green branch)."
+  exit 1
+fi
+echo "Test gate passed ($ran project(s) checked)."
+exit 0
