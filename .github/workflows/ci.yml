@@ -1,3 +1,12 @@
+# CI -- the backstop for the local pre-push gate.
+#
+# Runs the SAME scripts/gate.sh the hook runs. Do not add a check here that gate.sh
+# doesn't have -- add it to gate.sh and both triggers get it. A pipeline that has
+# drifted from the local gate teaches people to ignore the local gate.
+#
+# The checks this file used to list by hand (ruff format, ruff check, pyright, pytest,
+# pip-audit) all live in scripts/gate.sh now, in its LEKGOTLA-LOCAL block.
+
 name: CI
 
 on:
@@ -8,32 +17,57 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  quality:
+  gate:
     name: Test, type-check, lint, and audit
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
+    timeout-minutes: 20
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The placeholder and secret sweeps need the commits being introduced,
+          # not just the tip.
+          fetch-depth: 0
+
       - uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
           enable-cache: true
           cache-dependency-glob: "backend/pyproject.toml"
+
       - uses: actions/setup-python@v5
         with:
+          # PLAN.md pins Python 3.12; pyproject is the single source of that number.
           python-version-file: "backend/pyproject.toml"
+
       - name: Install dependencies
+        # Into backend/.venv, because that is the first thing gate.sh's
+        # resolve_python() looks for -- so CI resolves its interpreter through
+        # exactly the same branch a developer's machine does.
+        working-directory: backend
         run: uv sync --all-groups
-      - name: Check formatting
-        run: uv run ruff format --check .
-      - name: Lint
-        run: uv run ruff check .
-      - name: Type-check
-        run: uv run pyright
-      - name: Unit and BDD tests
-        run: uv run pytest
-      - name: Dependency audit
-        run: uv run pip-audit
+
+      - name: Compute the change set
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only --diff-filter=ACM \
+              "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" \
+              > /tmp/changed.txt
+          else
+            before="${{ github.event.before }}"
+            if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ] \
+               && git cat-file -e "$before^{commit}" 2>/dev/null; then
+              git diff --name-only --diff-filter=ACM "$before..${{ github.sha }}" > /tmp/changed.txt
+            else
+              git ls-tree -r --name-only "${{ github.sha }}" > /tmp/changed.txt
+            fi
+          fi
+          echo "$(wc -l < /tmp/changed.txt) file(s) in the change set"
+
+      - name: Run the gate
+        run: bash scripts/gate.sh --changed-files /tmp/changed.txt
