@@ -1,36 +1,62 @@
 """Lekgotla local API: compile AI configs into a scoped AGENTS.md manifest.
 
-T007 replaced the `http.server` implementation with a FastAPI app factory. The routes,
-the response bodies and the status codes are unchanged -- `tests/test_api_contract.py`
-was written against the old server and passes here untouched.
+T007 replaced the `http.server` implementation with a FastAPI app factory; T008 moved
+validation onto Pydantic models (`app/schemas.py`). The routes, the response bodies and
+the status codes are unchanged throughout -- `tests/test_api_contract.py` was written
+against the original stdlib server and still passes untouched.
 
-Validation is still hand-rolled at this stage, deliberately: T008 converts it to
-Pydantic models, and doing both in one step would leave no way to tell a migration bug
-from a validation bug. The one thing that must survive T008 is the *400* -- FastAPI's
-default answer to a bad request body is a 422 with a Pydantic error envelope, and this
-API has always answered 400 with `{"error": "..."}`.
+The one thing that had to be built by hand is the error envelope. FastAPI answers a bad
+request body with a 422 and a Pydantic error list; this API has always answered 400 with
+`{"error": "<a sentence>"}`, and the frontend reads that shape. `_validation_error`
+below is the translation, and it is deliberately the only place the two vocabularies
+meet.
 """
 
 from __future__ import annotations
 
-import json
+import re
 import sys
+from collections.abc import Callable, Coroutine
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 
 # Add backend directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
 
 from app.compiler import compile_manifest, context_bundle
+from app.schemas import (
+    CompileRequest,
+    CompileResponse,
+    ContextRequest,
+    ContextResponse,
+    Error,
+    Health,
+)
 
 ROOT = Path(__file__).parent.parent.parent.resolve() / "frontend"
 PORT = 4173
 MAX_BODY_BYTES = 1_000_000
+
+# Which field failed -> what the client has always been told. Keyed on the first
+# segment of the Pydantic error location under "body".
+FIELD_ERRORS = {
+    "sources": "sources must be an array of { name, content }",
+    "resolutions": "resolutions must be a JSON object mapping keys to string values",
+    "manifest": "manifest must be a string",
+    "task": "task must be a string",
+}
+
+ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
+    400: {"model": Error, "description": "The request body is malformed."},
+    413: {"model": Error, "description": "The request body exceeds 1 MB."},
+}
 
 
 class JsonResponse(JSONResponse):
@@ -48,25 +74,56 @@ def _error(status: HTTPStatus, message: str) -> JsonResponse:
     return JsonResponse(status_code=status, content={"error": message})
 
 
-async def _read_json_object(request: Request) -> dict[str, Any] | JsonResponse:
-    """Return the parsed request body, or the error response that replaces it."""
-    declared = request.headers.get("content-length")
-    if declared is not None and declared.isdigit() and int(declared) > MAX_BODY_BYTES:
-        return _error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "Request body exceeds 1 MB")
+def _safe_field_name(value: object) -> str:
+    """Render a field name for an error message without reflecting arbitrary input."""
+    return re.sub(r"[^A-Za-z0-9_.\-]", "", str(value))[:60] or "field"
 
-    raw = await request.body()
-    # A chunked request declares no length, so the limit is enforced again on what
-    # actually arrived rather than on what the client claimed.
-    if len(raw) > MAX_BODY_BYTES:
-        return _error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "Request body exceeds 1 MB")
 
-    try:
-        body = json.loads(raw or b"{}")
-    except (json.JSONDecodeError, ValueError):
+async def _validation_error(_: Request, exc: Exception) -> JsonResponse:
+    """Translate Pydantic's 422 envelope into this API's 400 one."""
+    assert isinstance(exc, RequestValidationError)
+    errors = exc.errors()
+
+    # An unparseable body is reported per-field as well, so check it first.
+    if any(error["type"] == "json_invalid" for error in errors):
         return _error(HTTPStatus.BAD_REQUEST, "Invalid JSON body")
-    if not isinstance(body, dict):
-        return _error(HTTPStatus.BAD_REQUEST, "Request body must be a JSON object")
-    return cast(dict[str, Any], body)
+
+    for error in errors:
+        location = error["loc"]
+        # ("body",) alone means the body parsed but is not an object at all.
+        if tuple(location) == ("body",):
+            return _error(HTTPStatus.BAD_REQUEST, "Request body must be a JSON object")
+        if len(location) >= 2 and location[0] == "body":
+            field = location[1]
+            if isinstance(field, str) and field in FIELD_ERRORS:
+                return _error(HTTPStatus.BAD_REQUEST, FIELD_ERRORS[field])
+
+    # Anything left is a field this endpoint does not accept. Name it -- sanitised, so
+    # a hostile key cannot be reflected into a log or a page -- and say nothing else.
+    unknown = next((error["loc"][-1] for error in errors if len(error["loc"]) > 1), "body")
+    return _error(HTTPStatus.BAD_REQUEST, f"{_safe_field_name(unknown)} is not a valid field for this endpoint")
+
+
+class BodyLimitedRoute(APIRoute):
+    """Enforce the 1 MB limit before FastAPI parses or validates anything.
+
+    A declared Content-Length is rejected without reading the body at all; the length of
+    what actually arrived is checked too, so a chunked request cannot walk past the
+    limit by declining to declare one.
+    """
+
+    def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+        handle = super().get_route_handler()
+
+        async def limited(request: Request) -> Response:
+            declared = request.headers.get("content-length")
+            if declared is not None and declared.isdigit() and int(declared) > MAX_BODY_BYTES:
+                return _error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "Request body exceeds 1 MB")
+            if len(await request.body()) > MAX_BODY_BYTES:
+                return _error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "Request body exceeds 1 MB")
+            return await handle(request)
+
+        return limited
 
 
 def create_app() -> FastAPI:
@@ -76,54 +133,21 @@ def create_app() -> FastAPI:
         description="Compile AI configs into a scoped AGENTS.md manifest.",
         default_response_class=JsonResponse,
     )
+    app.router.route_class = BodyLimitedRoute
+    app.add_exception_handler(RequestValidationError, _validation_error)
 
-    @app.get("/api/health")
-    async def health() -> JsonResponse:
-        return JsonResponse(status_code=HTTPStatus.OK, content={"status": "ok"})
+    @app.get("/api/health", response_model=Health)
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
 
-    @app.post("/api/compile")
-    async def compile_endpoint(request: Request) -> JsonResponse:
-        body = await _read_json_object(request)
-        if isinstance(body, JsonResponse):
-            return body
+    @app.post("/api/compile", response_model=CompileResponse, responses=ERROR_RESPONSES)
+    async def compile_endpoint(payload: CompileRequest) -> dict[str, Any]:
+        sources = [source.model_dump() for source in payload.sources]
+        return compile_manifest(sources, payload.resolutions)
 
-        sources = body.get("sources")
-        invalid_sources = not isinstance(sources, list) or any(
-            not isinstance(item, dict)
-            or not isinstance(item.get("name"), str)
-            or not isinstance(item.get("content"), str)
-            for item in sources
-        )
-        if invalid_sources:
-            return _error(HTTPStatus.BAD_REQUEST, "sources must be an array of { name, content }")
-
-        resolutions = body.get("resolutions")
-        if resolutions is not None and (
-            not isinstance(resolutions, dict)
-            or any(not isinstance(k, str) or not isinstance(v, str) for k, v in resolutions.items())
-        ):
-            return _error(
-                HTTPStatus.BAD_REQUEST,
-                "resolutions must be a JSON object mapping keys to string values",
-            )
-
-        result = compile_manifest(cast(list[dict[str, str]], sources), resolutions)
-        return JsonResponse(status_code=HTTPStatus.OK, content=result)
-
-    @app.post("/api/context")
-    async def context_endpoint(request: Request) -> JsonResponse:
-        body = await _read_json_object(request)
-        if isinstance(body, JsonResponse):
-            return body
-
-        manifest = body.get("manifest")
-        if not isinstance(manifest, str):
-            return _error(HTTPStatus.BAD_REQUEST, "manifest must be a string")
-        task = body.get("task", "ui")
-        if not isinstance(task, str):
-            return _error(HTTPStatus.BAD_REQUEST, "task must be a string")
-
-        return JsonResponse(status_code=HTTPStatus.OK, content=context_bundle(manifest, task))
+    @app.post("/api/context", response_model=ContextResponse, responses=ERROR_RESPONSES)
+    async def context_endpoint(payload: ContextRequest) -> dict[str, Any]:
+        return context_bundle(payload.manifest, payload.task)
 
     # Anything else under /api is a JSON 404, not the static mount's HTML one. Declared
     # before the mount because Starlette matches routes in registration order.
