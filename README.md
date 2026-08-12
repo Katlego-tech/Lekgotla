@@ -6,14 +6,8 @@ The architecture is a Dockerized FastAPI service system with separate service da
 
 ## Run the demo
 
-This is a dependency-free Python full-stack prototype. From this directory, you can run the server using either standard Python or the `uv` toolchain:
+The API is FastAPI on uvicorn, serving the static `frontend/` prototype from the same origin. It needs the locked dependency set, so run it through `uv`:
 
-Using standard Python:
-```bash
-python3 backend/app/main.py
-```
-
-Using `uv`:
 ```bash
 uv run --project backend backend/app/main.py
 ```
@@ -40,10 +34,7 @@ To run the complete test suite (both unit tests and BDD scenarios) using `uv`:
 uv run --project backend pytest
 ```
 
-Alternatively, to run only the standard unit tests using Python's built-in `unittest` framework (no external dependencies required):
-```bash
-python3 -m unittest backend/tests/test_server.py -v
-```
+The suite includes `tests/test_api_contract.py`, which boots the app on an ephemeral port and asserts the HTTP contract — status codes, error bodies and static serving — end to end. It is the regression net for the ongoing migration and should not be edited to make a change pass.
 
 ## Quality tooling
 
