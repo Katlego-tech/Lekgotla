@@ -40,11 +40,13 @@ def test_a_hostile_field_name_is_not_reflected_back(client: httpx.Client) -> Non
 
 
 def test_errors_never_echo_the_submitted_content(client: httpx.Client) -> None:
-    secret = "sk-do-not-echo-this-value"
-    response = client.post("/api/compile", json={"sources": [{"name": "CLAUDE.md", "content": secret}], "task": 1})
+    # Deliberately not credential-shaped: the gate's secret sweep scans the tree, and a
+    # realistic-looking token in a fixture would train everyone to ignore that alarm.
+    canary = "DO-NOT-ECHO-THIS-CONTENT"
+    response = client.post("/api/compile", json={"sources": [{"name": "CLAUDE.md", "content": canary}], "task": 1})
 
     assert response.status_code == 400
-    assert secret not in response.text
+    assert canary not in response.text
 
 
 def test_the_response_carries_only_the_declared_fields(client: httpx.Client) -> None:
