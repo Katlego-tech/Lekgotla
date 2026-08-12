@@ -45,9 +45,9 @@ tool own the generated artifacts and treat SPEC.md/PLAN.md/TASKS.md in this kit 
 seed** you feed into it:
 
 - `constitution` ← your **non-negotiables** (PLAN.md)
-- `specify` ← [SPEC.template.md](../SPEC.template.md)
-- `plan` ← [PLAN.template.md](../PLAN.template.md)
-- `tasks` ← [TASKS.template.md](../TASKS.template.md)
+- `specify` ← [SPEC.md](../SPEC.md)
+- `plan` ← [PLAN.md](../PLAN.md)
+- `tasks` ← [TASKS.md](../TASKS.md)
 
 The generated versions (typically under a `specs/` directory) become the system of record for
 implementation; **STATUS.md and AGENTS.md stay the coordination layer regardless** — every AI still

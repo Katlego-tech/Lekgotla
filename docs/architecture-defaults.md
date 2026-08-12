@@ -80,7 +80,7 @@ non-LTS pick there.
 
 ## Where this shows up
 
-- [PLAN.template.md](../PLAN.template.md)'s Technical Context table has `Architecture`, `Messaging`,
+- [PLAN.md](../PLAN.md)'s Technical Context table has `Architecture`, `Messaging`,
   `Frontend`, and `Containerization` rows pre-filled with these defaults — overwrite them per project
   instead of leaving them blank.
 - [docs/project-structure.md](project-structure.md)'s example tree assumes a `services/<name>/` shape,
