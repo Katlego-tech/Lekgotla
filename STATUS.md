@@ -3,7 +3,7 @@
 > Source of truth for "what's going on right now." Read first, update last. Treat updating it as
 > part of "done."
 
-_Last updated: 2026-08-12 — by Katlego (via Claude)_
+_Last updated: 2026-10-18 — by Katlego (via Claude)_
 
 ---
 
@@ -175,4 +175,9 @@ _Last updated: 2026-08-12 — by Katlego (via Claude)_
 - 2026-08-12 — Katlego (via Claude) — Recorded the two manifest constraints T001 dropped
   silently (org roles; always-recommends / save-by-default). See *Open decisions* 6. Neither
   is restored yet — the first is a product-scope call.
+- 2026-10-18 — Katlego (via Claude) — README rewritten to describe what is built: one FastAPI
+  process, a regex-based deterministic compiler, estimated (not measured) token figures, an
+  empty schema, 48 tests (47 pytest + 1 BDD scenario). The multi-service design (RabbitMQ,
+  GitHub OAuth, OpenAI merge, Docker, per-service databases) moved under "Planned, not built".
+  No code changed. Branch `docs/honest-readme`, stacked on `feat/foundational`.
 - 2026-07-26 — Katlego (via Gemini) — Completed Phase 1 (T001–T005): committed kit scaffold on main, created feat/setup branch, merged engineering manifest into docs/project-structure.md and PLAN.md, pinned Node v24 LTS, committed uv.lock, pruned unused dependencies in pyproject.toml and uv.lock, updated pre-push hook with ruff format, pyright, and pip-audit checks.
