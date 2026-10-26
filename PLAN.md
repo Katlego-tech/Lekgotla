@@ -14,8 +14,9 @@ calls — the source files the UI "compiles" are a JavaScript object literal in 
 
 The work ahead is to turn that shell into a real product: a FastAPI backend with identity,
 persistence and migrations; a React + shadcn/ui frontend that keeps the current visual identity
-exactly; and the GitHub + OpenAI integrations the
-[engineering manifest](docs/engineering-manifest.md) already commits to. The key technical bet is
+exactly; and the GitHub + OpenAI integrations the original engineering manifest already commits
+to (merged into the Non-negotiables below and into
+[docs/project-structure.md](docs/project-structure.md) by T001). The key technical bet is
 that the **deterministic compiler stays the source of truth** and the model is only ever a
 semantic-merge assistant layered on top of it — never the thing that decides what a rule says.
 
@@ -39,8 +40,10 @@ semantic-merge assistant layered on top of it — never the thing that decides w
    surfaces; one writer per task.
 7. **Branch-only, always-green `main`.** No direct pushes; every change lands via PR with a green gate.
 
-The full product/security constraint set these are distilled from is preserved verbatim in
-[docs/engineering-manifest.md](docs/engineering-manifest.md).
+These are distilled from the pre-kit `AGENTS.md` engineering manifest, which T001 merged into
+this file and [docs/project-structure.md](docs/project-structure.md) and then deleted. Two of its
+constraints were dropped in that merge without a home; both are recorded, unresolved, in
+[STATUS.md](STATUS.md) § *Open decisions* 6.
 
 ---
 
@@ -68,9 +71,8 @@ The full product/security constraint set these are distilled from is preserved v
 
 **Status: confirmed by Katlego, 2026-07-26.**
 
-[docs/architecture-defaults.md](docs/architecture-defaults.md) §1 defaults to microservices; the
-[engineering manifest](docs/engineering-manifest.md) already specifies four of them with a database
-each. **We are deliberately starting as a modular monolith**, because standing up four services, four
+[docs/architecture-defaults.md](docs/architecture-defaults.md) §1 defaults to microservices, and
+the original engineering manifest already specified four of them with a database each. **We are deliberately starting as a modular monolith**, because standing up four services, four
 databases and a broker before there is a single real user account would be pure overhead — exactly
 the "small enough that service boundaries are overhead" case §1 names as a legitimate reason to
 deviate.
@@ -93,13 +95,18 @@ Lekgotla/
 │   │   ├── github/          OAuth, repo listing, read-only fetch, PR writes
 │   │   ├── compiler/        the deterministic compiler (today's compiler.py) + model merge
 │   │   ├── gateway/         FastAPI routers, auth dependencies, the only browser-facing layer
-│   │   ├── db/              SQLAlchemy models, session factory
-│   │   └── main.py          app factory (replaces today's http.server)
+│   │   ├── db/              declarative Base, engine, session factory — shared plumbing
+│   │   ├── settings.py      environment-read config; the single source for the DSN
+│   │   └── main.py          app factory (replaces the old http.server)
 │   ├── alembic/             migrations — one per schema change, no exceptions
 │   └── tests/               unit + BDD, mirroring the module tree
-├── frontend/                today's static prototype — replaced by apps/web at Phase 4
-└── apps/web/                React + shadcn/ui (Phase 4)
+├── frontend/                today's static prototype — replaced by apps/web at Phase 5
+└── apps/web/                React + shadcn/ui (Phase 5)
 ```
+
+`app/db/` is shared plumbing, not a peer module: every module declares its own models against
+the one `Base` and reads only its own tables. `app/db/models.py` imports them all so Alembic can
+see them, and is off limits inside `app/` for exactly that reason — T011 enforces both.
 
 The long-form write-up lives in [docs/project-structure.md](docs/project-structure.md); update it as
 each phase lands rather than in one pass at the end.
@@ -130,8 +137,14 @@ Mirrors [TASKS.md](TASKS.md). Each phase is independently demoable at its checkp
 ## Testing gate
 
 - **Test-first:** every story phase writes failing tests before implementation.
-- **Gate:** the [pre-push hook](.githooks/pre-push) runs Ruff + the fast suite in every project it
-  finds, and **fails if it finds nothing to run** — a gate that silently checks zero projects is the
-  failure mode it exists to prevent. CI re-runs it plus format-check, Pyright, and `pip-audit`.
+- **Gate:** one script, [`scripts/gate.sh`](scripts/gate.sh), run by both the
+  [pre-push hook](.githooks/pre-push) and CI — so the local gate and the pipeline cannot
+  disagree. Ruff lint + format, Pyright, pytest, `pip-audit`, a placeholder sweep and a secret
+  sweep. It **fails if it finds nothing to run**: a gate that silently checks zero projects is
+  the failure mode it exists to prevent.
+- **The contract net:** `backend/tests/test_api_contract.py` pins the HTTP API as observable
+  behaviour — status codes, error bodies, headers. It survived the whole stdlib → FastAPI
+  migration unedited. If an assertion in it has to move, that is a contract break and belongs
+  in a decision, not in a diff.
 
 See [docs/testing-strategy.md](docs/testing-strategy.md).
