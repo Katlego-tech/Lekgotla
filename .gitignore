@@ -10,3 +10,13 @@ __pycache__/
 .temp_venv/
 venv/
 .DS_Store
+
+# Local datastore and secrets. The SQLite file is per-developer state, not shared
+# state, and .env holds credentials that must never reach the repository.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.env
+.env.*
+!.env.example

@@ -37,6 +37,12 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
+[tool.ruff.lint.per-file-ignores]
+# Migrations are generated from alembic/script.py.mako, which imports `op` and `sa`
+# because almost every revision needs them. An empty or DDL-only revision does not, and
+# editing generated files to satisfy the linter is how migration history gets corrupted.
+"alembic/versions/*.py" = ["F401", "I001"]
+
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"

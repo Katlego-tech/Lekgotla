@@ -1,7 +1,7 @@
 # `Lekgotla` — Handoff
 
 > Copy this to `docs/HANDOFF.md`, fill it in, then set the `## ⇄ HANDOFF` block at the top of
-> [STATUS.md](STATUS.md) to `ACTIVE` and point it here.
+> [STATUS.md](../STATUS.md) to `ACTIVE` and point it here.
 >
 > **Write this while you still have budget left.** A handoff written after you run out is
 > worthless. Ten minutes spent here saves the incoming session an hour of rediscovery.

@@ -25,7 +25,7 @@ Everything else is unclaimed; Gemini should work top-down from Phase 1.
 
 The repo currently claims things that are not true. Fix that before building on it.
 
-- [x] T001 [SET] Merge [docs/engineering-manifest.md](docs/engineering-manifest.md) into its proper
+- [x] T001 [SET] Merge `docs/engineering-manifest.md` (since merged and deleted) into its proper
       homes: security/product constraints → PLAN.md Non-negotiables (already drafted, verify nothing
       was dropped); architecture detail → docs/project-structure.md. Then delete the preserved file.
       **Do not silently drop a constraint** — if one has no home, say so in STATUS.md.
@@ -50,19 +50,19 @@ The repo currently claims things that are not true. Fix that before building on 
 
 Everything below depends on this. Do not start Phase 3 until the checkpoint holds.
 
-- [ ] T006 [FND] Write failing tests asserting the existing `/api/health`, `/api/compile` and
+- [x] T006 [FND] Write failing tests asserting the existing `/api/health`, `/api/compile` and
       `/api/context` contracts — **against the current stdlib server**, before replacing it. These
       are the regression net for the whole migration. Include the existing 400-path validations.
-- [ ] T007 [FND] Replace `backend/app/main.py`'s `http.server` with a FastAPI app factory + uvicorn.
+- [x] T007 [FND] Replace `backend/app/main.py`'s `http.server` with a FastAPI app factory + uvicorn.
       Same three routes, same request/response shapes, same status codes. T006 must pass unchanged.
-- [ ] T008 [FND] Convert the hand-rolled validation in `main.py` to Pydantic request/response models.
+- [x] T008 [FND] Convert the hand-rolled validation in `main.py` to Pydantic request/response models.
       The error bodies stay actionable and leak nothing.
-- [ ] T009 [FND] Create the module skeleton from PLAN.md: `app/identity/`, `app/github/`,
+- [x] T009 [FND] Create the module skeleton from PLAN.md: `app/identity/`, `app/github/`,
       `app/compiler/`, `app/gateway/`, `app/db/`. Move today's `compiler.py` into `app/compiler/`
       untouched — a pure move, no behaviour change, tests still pass.
-- [ ] T010 [FND] Wire SQLAlchemy 2.x + a session factory + Alembic. Ship the initial empty migration
+- [x] T010 [FND] Wire SQLAlchemy 2.x + a session factory + Alembic. Ship the initial empty migration
       and prove `alembic upgrade head` runs from clean.
-- [ ] T011 [FND] Add the module-boundary test: no module imports another module's ORM models. This is
+- [x] T011 [FND] Add the module-boundary test: no module imports another module's ORM models. This is
       the single rule that keeps the Phase 9 service split cheap (PLAN.md, *Architecture deviation*).
 
 **Checkpoint:** the app boots on FastAPI, the frontend still works untouched against it, migrations
